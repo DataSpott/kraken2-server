@@ -47,5 +47,4 @@ target_link_libraries(kraken2_proto
     absl::statusor
     absl::time
     absl::base
-    utf8_range::utf8_range
 )
