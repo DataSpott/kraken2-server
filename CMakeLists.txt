@@ -33,6 +33,8 @@ endif()
 # Locate and verify version of gRPC
 find_package(gRPC CONFIG REQUIRED)
 message(STATUS "Using gRPC ${gRPC_VERSION}")
+find_package(absl CONFIG REQUIRED)
+find_package(utf8_range CONFIG REQUIRED)
 
 # Set a variable which points to a library installed on machine - gRPC for C++
 set(_GRPC_GRPCPP gRPC::grpc++)
