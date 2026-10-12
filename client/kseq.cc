@@ -7,7 +7,18 @@ FastReader::FastReader(std::string filename)
 {
     m_filename = filename;
     FILE *instream = (filename == "-") ? stdin : fopen(filename.c_str(), "r");
+    if (!instream) {
+        throw std::runtime_error("Cannot open input: " + filename);
+    }
+
     m_fp = gzdopen(fileno(instream), "r");
+    if (!m_fp) {
+        if (instream != stdin) {
+            fclose(instream);
+        }
+        throw std::runtime_error("gzdopen failed: " + filename);
+    }
+
     m_seq = kseq_init(m_fp);
 }
 
