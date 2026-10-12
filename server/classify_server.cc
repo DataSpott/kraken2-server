@@ -323,7 +323,7 @@ Kraken2SequenceResult Kraken2ServerClassifier::ClassifySequence(
     }
 
     Kraken2SequenceResult result;
-    result.set_id(dna.id);
+    result.set_id(dna.header);
     if (call)
     {
         result.set_classified(true);
@@ -351,7 +351,7 @@ void Kraken2ServerClassifier::MaskLowQualityBases(Sequence &dna, int minimum_qua
         return;
     if (dna.seq.size() != dna.quals.size())
         errx(EX_DATAERR, "%s: Sequence length (%d) != Quality string length (%d)",
-             dna.id.c_str(), (int)dna.seq.size(), (int)dna.quals.size());
+             dna.header.c_str(), (int)dna.seq.size(), (int)dna.quals.size());
     for (size_t i = 0; i < dna.seq.size(); i++)
     {
         if ((dna.quals[i] - '!') < minimum_quality_score)

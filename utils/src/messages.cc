@@ -16,8 +16,7 @@ bool SequenceRequestToSequence(
         break;
     }
 
-    seq.header = std::string(req.header());
-    seq.id = std::string(req.id());
+    seq.header = std::string(req.id());
     seq.seq = std::string(req.seq());
     seq.quals = std::string(req.quals());
 
