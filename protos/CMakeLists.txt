@@ -40,7 +40,7 @@ target_include_directories(kraken2_proto PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
 target_link_libraries(kraken2_proto
     ${_PROTOBUF_LIBPROTOBUF}
     ${_REFLECTION}
-    ${_GRPC_GRPCPP})
+    ${_GRPC_GRPCPP}
     absl::synchronization
     absl::strings
     absl::status
@@ -48,3 +48,4 @@ target_link_libraries(kraken2_proto
     absl::time
     absl::base
     utf8_range::utf8_range
+)
