@@ -21,4 +21,5 @@ target_link_libraries(kraken2_client
     absl::time
     absl::base
     utf8_range::utf8_range
-    utf8_range::utf8_validity)
+    utf8_range::utf8_validity
+)
