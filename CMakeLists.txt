@@ -14,7 +14,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 # Locate and verify version of protobuf
 set(protobuf_MODULE_COMPATIBLE TRUE)
-find_package(Protobuf CONFIG REQUIRED)
+find_package(Protobuf REQUIRED)
 message(STATUS "Using protobuf ${Protobuf_VERSION}")
 
 ## Set a variable which points to a library installed on machine - Protobuf
@@ -34,7 +34,6 @@ endif()
 find_package(gRPC CONFIG REQUIRED)
 message(STATUS "Using gRPC ${gRPC_VERSION}")
 find_package(absl CONFIG REQUIRED)
-find_package(utf8_range CONFIG REQUIRED)
 
 # Set a variable which points to a library installed on machine - gRPC for C++
 set(_GRPC_GRPCPP gRPC::grpc++)
