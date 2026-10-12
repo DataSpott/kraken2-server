@@ -13,4 +13,13 @@ target_link_libraries(kraken2_server
     classify
     ${_PROTOBUF_LIBPROTOBUF}
     ${_REFLECTION}
-    ${_GRPC_GRPCPP})
+    ${_GRPC_GRPCPP}
+    absl::synchronization
+    absl::strings
+    absl::status
+    absl::statusor
+    absl::time
+    absl::base
+    utf8_range::utf8_range
+    utf8_range::utf8_validity
+)
