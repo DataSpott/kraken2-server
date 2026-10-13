@@ -199,6 +199,7 @@ void Usage(int exit_code) {
               << "\t-q, -Q, --min-quality [int]     Minimum base quality used in classification (default: 0), only effective with FASTQ input)." << std::endl
               << "\t-g, -G, --hit-groups [int]      Minimum number of hit groups (overlapping k-mers sharing the same minimizer) needed to make a call (default: 2)" << std::endl
               << "\t-o, -O, --memory-mapping        Avoids loading database into RAM" << std::endl;
+              << "\t-v, -V, --version               Print version information and exit" << std::edl;
     exit(exit_code);
 }
 
@@ -232,6 +233,8 @@ void ParseCommandLine(int argc, char **argv, Options &opts) {
         {"hit-groups", required_argument, NULL, 'G'},
         {"memory-mapping", no_argument, NULL, 'o'},
         {"memory-mapping", no_argument, NULL, 'O'},
+        {"version", no_argument, Null, 'v'},
+        {"version", no_argument, Null, 'V'},
         {"wait", required_argument, NULL, 'w'},
         {"wait", required_argument, NULL, 'W'},
         {"help", no_argument, NULL, 'h'},
@@ -241,12 +244,24 @@ void ParseCommandLine(int argc, char **argv, Options &opts) {
     int opt;
     // Handle the various shell arguments (long mapped to short)
     while ((opt = getopt_long(
-        argc, argv, "hH?d:D:r:R:sSkKzZc:C:q:Q:g:G:oOx:X:p:P:wW", long_options, NULL)) != -1) {
+        argc, argv, "hH?d:D:r:R:sSkKzZc:C:q:Q:g:G:oOx:X:p:P:wWvV", long_options, NULL)) != -1) {
         switch (opt){
             case '?':
             case 'h':
             case 'H':
                 Usage(0);
+                break;
+            case 'v':
+            case 'V':
+            #ifndef KRAKEN2_SERVER_GIT_SHA
+            #define KRAKEN2_SERVER_GIT_SHA "unkown"
+            #endif
+            #ifndef KRAKEN2_GIT_DESCRIBE
+            #define KRAKEN2_GIT_DESCRIBE "unknown"
+            #endif
+                std::cout << "kraken2-server " << KRAKEN2_SERVER_GIT_SHA << std::endl
+                          << "kraken2 " << KRAKEN2_GIT_DESCRIBE << std::endl;
+                exit(0);
                 break;
             case 'd':
             case 'D':

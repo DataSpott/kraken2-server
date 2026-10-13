@@ -4,6 +4,36 @@ cmake_minimum_required(VERSION 3.13)
 # Project name
 project(kraken2_server_client)
 
+# Build provenance for --version: git revisions baked into the binaries
+find_package(Git QUIET)
+if (GIT_FOUND)
+    execute_process(
+        COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        OUTPUT_VARIABLE KRAKEN2_SERVER_GIT_SHA
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+    )
+    execute_process(
+        COMMAND ${GIT_EXECUTABLE} describe --tags --always
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/kraken2
+        OUTPUT_VARIABLE KRAKEN2_GIT_DESCRIBE
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+    )
+endif()
+if(NOT KRAKEN2_SERVER_GIT_SHA)
+    set(KRAKEN2_SERVER_GIT_SHA "unknown")
+endif()
+if(NOT KRAKEN2_GIT_DESCRIBE)
+    set(KRAKEN2_GIT_DESCRIBE "unknown")
+endif()
+message(STATUS "Build provenance: kraken2-server ${KRAKEN2_SERVER_GIT_SHA}, kraken2 ${KRAKEN2_GIT_DESCRIBE}")
+add_compile_definitions(
+    KRAKEN2_SERVER_GIT_SHA="${KRAKEN2_SERVER_GIT_SHA}"
+    KRAKEN2_GIT_DESCRIBE="${KRAKEN2_GIT_DESCRIBE}"
+)
+
 # Set the C++ standard to be used
 set(CMAKE_CXX_STANDARD 17)
 

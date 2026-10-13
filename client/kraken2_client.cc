@@ -381,6 +381,7 @@ void Usage(int exit_code) {
               << "\t-i, -I  --host-ip            Server IP address (default: localhost)." << std::endl
               << "\t-p, -P, --port [num]         Server port (default: 8080)." << std::endl
               << "\t-k, -K, --shutdown           Shutdown server" << std::endl
+              << "\t-v, -V, --version            Print version information and exit" << std::endl
               << std::endl
               << "Leave sequence blank to request the total summary data from the specified endpoint." << std::endl
               << std::endl;
@@ -403,16 +404,29 @@ void ParseCommandLine(int argc, char **argv, Options &opts) {
             {"shutdown", no_argument, NULL, 'K'},
             {"help", no_argument, NULL, 'h'},
             {"help", no_argument, NULL, 'H'},
+            {"version", no_argument, NULL, 'v'}
+            {"version", no_argument, NULL, 'V'}
             {NULL, 0, NULL, 0}};
     int opt;
     // Handle the various shell arguments (long mapped to short)
-    while ((opt = getopt_long(argc, argv, "hH?u:U:s:S:r:R:p:P:bBkK", long_options, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "hH?u:U:s:S:r:R:p:P:bBkKvV", long_options, NULL)) != -1) {
         switch (opt)
         {
         case 'h':
         case '?':
         case 'H':
             Usage(0);
+            break;
+        case 'V':
+        #ifndef KRAKEN2_SERVER_GIT_SHA
+        #define KRAKEN2_SERVER_GIT_SHA "unkown"
+        #endif
+        #ifndef KRAKEN2_GIT_DESCRIBE
+        #define KRAKEN2_GIT_DESCRIBE "unknown"
+        #endif
+            std::cout << "kraken2-server " << KRAKEN2_SERVER_GIT_SHA << std::endl
+                      << "kraken2 " << KRAKEN2_GIT_DESCRIBE << std::endl;
+            exit(0);
             break;
         case 's':
         case 'S':
