@@ -1,7 +1,7 @@
 #include "messages.h"
 
 bool SequenceRequestToSequence(
-    const kraken2proto::Kraken2SequenceRequest &req, kraken2::Sequence &seq)
+    const kraken2proto::Kraken2SequenceRequest &req, kraken2::Sequence &seq, kraken2::Sequence &seq2)
 {
     switch (req.format())
     {
@@ -19,6 +19,13 @@ bool SequenceRequestToSequence(
     seq.header = std::string(req.id());
     seq.seq = std::string(req.seq());
     seq.quals = std::string(req.quals());
+
+    if (req.paired()){
+        seq2.format = seq.format;
+        seq2.header = std::string(req.id2());
+        seq2.seq = std::string(req.seq2());
+        seq2.quals = std::string(req.quals2());
+    }
 
     return true;
 }

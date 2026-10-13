@@ -2,4 +2,4 @@
 #include "seqreader.h"
 
 bool SequenceRequestToSequence(
-    const kraken2proto::Kraken2SequenceRequest &req, kraken2::Sequence &seq);
+    const kraken2proto::Kraken2SequenceRequest &req, kraken2::Sequence &seq, kraken2::Sequence &seq2);

@@ -12,7 +12,7 @@ KSEQ_INIT(gzFile, gzread)
 class FastReader
 {
 public:
-    FastReader(std::string filename);
+    FastReader(std::string filename, const std::string &mates_file = "");
     ~FastReader();
     // Read (at most) one sequence
     int read(Kraken2SequenceRequest&);
@@ -24,4 +24,8 @@ private:
     std::string m_filename;
     gzFile m_fp;
     kseq_t *m_seq;
+    std::string m_mates_filename;
+    gzFile m_fp2;
+    kseq_t *m_seq2;
+    bool m_paired;
 };

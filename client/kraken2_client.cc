@@ -48,8 +48,9 @@ using kraken2proto::Kraken2ShutdownResult;
 struct Options
 {
     std::string sequence;
-    std::string report_file;
     std::string output_file;
+    std::string report_file;
+    std::string mates;
     std::string host = "localhost";
     int port = 8080;
     bool shutdown = false;
@@ -77,7 +78,7 @@ public:
      * @return EX_UNAVAILABLE if sequences could nto be sent to server
      * @return else gRPC status code
      */
-    int ClassifySequences(const std::string &sequence_name, const std::string &output_file, const std::string &report_file) {
+    int ClassifySequences(const std::string &sequence_name, const std::string &output_file, const std::string &report_file, const std::string &mates_file) {
         std::cerr << "Classifying sequence stream." << std::endl;
         std::ofstream output_stream;
         std::ostream *class_out = &std::cout;
@@ -104,7 +105,7 @@ public:
         // reads data from file into queue
         std::future<int> fastq_batches = std::async(
             std::launch::async, &SequenceClient::FastBatcher, this,
-            std::ref(sequence_name), batches_queue);
+            std::ref(sequence_name), batches_queue, std::ref(mates_file));
 
         // take data from queue and send over gRPC
         std::future<int> stream_batches = std::async(
@@ -280,10 +281,12 @@ public:
 
     int FastBatcher(
             const std::string &sequence_file,
-            ThreadSafeQueue<std::vector<Kraken2SequenceRequest>> *batches_queue) {
+            ThreadSafeQueue<std::vector<Kraken2SequenceRequest>> *batches_queue,
+            const std::string &mates_file
+        ) {
         int n_batches = 0;
         try {
-            FastReader reader = FastReader(sequence_file);
+            FastReader reader = FastReader(sequence_file, mates_file);
         
             std::cerr << "Reading sequences from file: " << sequence_file << std::endl;
             while (true) {
@@ -388,6 +391,7 @@ void Usage(int exit_code) {
               << std::endl
               << "\t-h, -H, -?, --help           Usage" << std::endl
               << "\t-s, -S, --sequence [path]    Path to sequence file (*.fast(a|q)(.gz)" << std::endl
+              << "\t-m, -M, --mates    [path]    Path to mate sequence file (R2, enables paired-end mode)" << std::endl
               << "\t-o, -O, --output   [path]    Path to output file" << std::endl
               << "\t-r, -R  --report   [path]    Path to output report file" << std::endl
               << "\t-i, -I  --host-ip            Server IP address (default: localhost)." << std::endl
@@ -406,6 +410,8 @@ void ParseCommandLine(int argc, char **argv, Options &opts) {
         {
             {"sequence", required_argument, NULL, 's'},
             {"sequence", required_argument, NULL, 'S'},
+            {"mates", required_argument, NULL, 'm'},
+            {"mates", required_argument, NULL, 'M'},
             {"output", required_argument, NULL, 'o'},
             {"output", required_argument, NULL, 'O'},
             {"report", required_argument, NULL, 'r'},
@@ -423,7 +429,7 @@ void ParseCommandLine(int argc, char **argv, Options &opts) {
             {NULL, 0, NULL, 0}};
     int opt;
     // Handle the various shell arguments (long mapped to short)
-    while ((opt = getopt_long(argc, argv, "hH?u:U:s:S:o:O:r:R:p:P:bBkKvV", long_options, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "hH?u:U:s:S:m:M:o:O:r:R:p:P:bBkKvV", long_options, NULL)) != -1) {
         switch (opt)
         {
         case 'h':
@@ -446,6 +452,10 @@ void ParseCommandLine(int argc, char **argv, Options &opts) {
         case 's':
         case 'S':
             opts.sequence = optarg;
+            break;
+        case 'm':
+        case 'M':
+            opts.mates = optarg;
             break;
         case 'o':
         case 'O':
@@ -507,7 +517,8 @@ int main(int argc, char **argv) {
         const std::string filename(opts.sequence);
         const std::string output_file(opts.output_file);
         const std::string report_file(opts.report_file);
-        rtn_code = client.ClassifySequences(filename, output_file, report_file);
+        const std::string mates_file(opts.mates);
+        rtn_code = client.ClassifySequences(filename, output_file, report_file, mates_file);
     }
 
     std::cerr << "Return code: " << rtn_code << std::endl;

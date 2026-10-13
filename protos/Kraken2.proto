@@ -14,6 +14,7 @@ service Kraken2Service {
 message Kraken2ReadyRequest {}
 
 message Kraken2ReadyResult {
+
   bool ready = 1;
 }
 
@@ -44,6 +45,11 @@ message Kraken2SequenceRequest {
   string seq = 4;
   string quals = 5;
   string str_representation = 6;
+  bool paired = 7;
+  string id2 = 8;
+  string header2 = 9;
+  string seq2 = 10;
+  string quals2 = 11;
 }
 
 message Kraken2SequenceRequestMulti {

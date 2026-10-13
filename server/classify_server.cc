@@ -159,18 +159,38 @@ bool Kraken2ServerClassifier::ProcessBatch(
     BatchResults results = BatchResults();
 
     kraken2::Sequence seq;
+    kraken2::Sequence seq2;
     for (auto &req : reqs.seqs()) {
-        SequenceRequestToSequence(req, seq);
-        results.stats.total_sequences++;
-        results.stats.total_bases += seq.seq.size();
-        if (opts.minimum_quality_score > 0)
-            MaskLowQualityBases(seq, opts.minimum_quality_score);
+        SequenceRequestToSequence(req, seq, seq2);
+        if (req.paired()) {
+            results.stats.total_sequences += 2;
+            results.stats.total_bases += seq.seq.size() + seq2.seq.size();
+            if (opts.minimum_quality_score > 0) {
+                MaskLowQualityBases(seq, opts.minimum_quality_score);
+                MaskLowQualityBases(seq2, opts.minimum_quality_score);
+            }
 
-        Kraken2SequenceResult classification = ClassifySequence(
-            seq, hash, taxonomy, idx_opts, opts, results.stats, scanner,
-            taxa, hit_counts, translated_frames, results.taxon_counters);
+            Kraken2SequenceResult res1, res2;
+            ClassifyPaired(
+                seq, seq2, hash, taxonomy, idx_opts, opts, results.stats, scanner,
+                taxa, hit_counts, translated_frames, results.taxon_counters, res1, res2
+            );
 
-        results.k2results.mutable_classes()->Add(std::move(classification));
+            results.k2results.mutable_classes()->Add(std::move(res1));
+            results.k2results.mutable_classes()->Add(std::move(res2));
+        } else {
+            results.stats.total_sequences++;
+            results.stats.total_bases += seq.seq.size();
+            if (opts.minimum_quality_score > 0)
+                MaskLowQualityBases(seq, opts.minimum_quality_score);
+
+            Kraken2SequenceResult classification = ClassifySequence(
+                seq, hash, taxonomy, idx_opts, opts, results.stats, scanner,
+                taxa, hit_counts, translated_frames, results.taxon_counters
+            );
+
+            results.k2results.mutable_classes()->Add(std::move(classification));
+        }
     }
 
     result_q->push(std::move(results));
@@ -352,6 +372,131 @@ Kraken2SequenceResult Kraken2ServerClassifier::ClassifySequence(
     }
 
     return result;
+}
+
+// Joint classification of an R1/R2 mate pair, modelled on kraken2's paired
+// path: both mates are scanned into one taxa vector (separated by a
+// MATE_PAIR_BORDER_TAXON marker) and resolved with a single ResolveTree call.
+void Kraken2ServerClassifier::ClassifyPaired(
+    Sequence &dna, Sequence &dna2,
+    KeyValueStore *hash, Taxonomy &taxonomy, IndexOptions &idx_opts,
+    Options &opts, ClassificationStats &stats, MinimizerScanner &scanner,
+    vector<taxid_t> &taxa, taxon_counts_t &hit_counts,
+    vector<string> &tx_frames, taxon_counters_t &curr_taxon_counts,
+    Kraken2SequenceResult &res1, Kraken2SequenceResult &res2
+) {
+    uint64_t *minimizer_ptr;
+    taxid_t call = 0;
+    taxa.clear();
+    hit_counts.clear();
+    auto frame_ct = opts.use_translated_search ? 6 : 1;
+    int64_t minimizer_hit_groups = 0;
+
+    Sequence *mates[2] = {&dna, &dna2};
+    for (int mate_idx = 0; mate_idx < 2; mate_idx++) {
+        Sequence &mate = *mates[mate_idx];
+        if (opts.use_translated_search) {
+            TranslateToAllFrames(mate.seq.c_str(), mate.seq.size(), tx_frames);
+        }
+        // Index of frame is 0 - 5 with tx search (or 0 if no tx search)
+        for (int frame_idx = 0; frame_idx < frame_ct; frame_idx++) {
+            if (opts.use_translated_search) {
+                scanner.LoadSequence(tx_frames[frame_idx]);
+            } else {
+                scanner.LoadSequence(mate.seq);
+            }
+            uint64_t last_minimizer ) UINT64_MAX;
+            taxid_t last_taxon = TAXID_MAX;
+            while ((minimizer_ptr = scanner.NextMinimizer()) != nullptr) {
+                taxid_t taxon;
+                if (scanner.is_ambiguous()) {
+                    taxon = AMBIGUOUS_SPAN_TAXON;
+                } else {
+                    if (*minimizer_ptr != last_minimizer) {
+                        bool skip_lookup = false;
+                        if (idx_opts.minimum_acceptable_hash_value) {
+                            if (MurmurHash3(*minimizer_ptr) < idx_opts.minimum_acceptable_hash_value) {
+                                skip_lookup = true;
+                            }
+                        }
+                        taxon = 0;
+                        if (!skip_lookup) {
+                            taxon = hash->Get(*minimizer_ptr);
+                        }
+                        last_taxon = taxon;
+                        last_minimizer = *minimizer_ptr;
+                        // Increment this only if a) a DB hit exists and
+                        // b) minimizer != last minimizer
+
+                        if (taxon) {
+                            minimizer_hit_groups++;
+                            // New minimizer should trigger registering minimizer in RC/HLL
+                            curr_taxon_counts[taxon].add_kmer(scanner.last_minimizer());
+                        }
+                    } else {
+                        taxon = last_taxon;
+                    }
+                    if (taxon) {
+                        hit_counts[taxon]++;
+                    }
+                }
+                taxa.push_back(taxon);
+            }
+            if (opts.use_translated_search && frame_idx != 5) {
+                taxa.push_back(READING_FRAME_BORDER_TAXON);
+            }
+        }
+        if (mate_idx == 0) {
+            taxa.push_back(MATE_PAIR_BORDER_TAXON);
+        }
+    }
+
+    delete minimizer_ptr;
+
+    // One mate-pair border marker (frame markers as in the single path:
+    // same convention, 2 per mate with translated search)
+    auto total_kmers = taxa.size() -1;
+
+    if (opts.use_translated_search) { // Account for reading frame markers
+        total_kmers -= 4;
+    }
+    call = ResolveTree(hit_counts, taxonomy, total_kmers, opts);
+    // Void a call made by too few minimizer groups
+    if (call && minimizer_hit_groups < opts.minimum_hit_groups) {
+        call = 0;
+    }
+    if (call) {
+        stats.total_classified += 2;
+        curr_taxon_counts[call].incrementReadCount();
+        curr_taxon_counts[call].incrementReadCount();
+    }
+
+    std::string hitlist_str;
+    if (taxa.empty()) {
+        hitlist_str = "0:0";
+    } else {
+        std::ostringstream hitlist;
+        AddHitlistString(hitlist, taxa, taxonomy);
+        hitlist_str = hitlist.str();
+    }
+
+    res1.set_id(dna.header);
+    res1.set_size(dna.seq.size());
+    res1.set_hitlist(hitlist_str);
+    res2.set_id(dna2.header);
+    res2.set_size(dna2.seq.size());
+    res2.set_hitlist(hitlist_str);
+    if (call) {
+        res1.set_classified(true);
+        res2.set_classified(true);
+        res1.set_tax_id(taxonomy.nodes()[call].external_id);
+        res2.set_tax_id(taxonomy.nodes()[call].external_id);
+        res1.set_name(taxonomy.name_data() + taxonomy.nodes()[call].name_offset);
+        res2.set_name(taxonomy.name_data() + taxonomy.nodes()[call].name_offset);
+    } else {
+        res1.set_classified(false);
+        res2.set_classified(false);
+    }
 }
 
 void Kraken2ServerClassifier::MaskLowQualityBases(Sequence &dna, int minimum_quality_score)

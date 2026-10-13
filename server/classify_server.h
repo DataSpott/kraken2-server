@@ -133,6 +133,17 @@ private:
         vector<taxid_t> &taxa, taxon_counts_t &hit_counts,
         vector<string> &tx_frames, taxon_counters_t &curr_taxon_counts);
 
+    // Joint classification of an R1/R2 mate pair (one shared call,
+    // one result per mate). Modelled on kraken2's paired path.
+    void ClassifyPaired(
+        Sequence &dna, Sequence &dna2,
+        KeyValueStore *hash, Taxonomy &taxonomy, IndexOptions &idx_opts,
+        Options &opts, ClassificationStats &stats, MinimizerScanner &scanner,
+        vector<taxid_t> &taxa, taxon_counts_t &hit_counts,
+        vector<string> &tx_frames, taxon_counters_t &curr_taxon_counts,
+        Kraken2SequenceResult &res1, Kraken2SequenceResult &res2
+    );
+
     void MaskLowQualityBases(Sequence &dna, int minimum_quality_score);
 
     void ProcessFile(
