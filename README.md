@@ -1,5 +1,5 @@
-**This is a fork of the original kraken2-server from epi2me-labs.**
-**Goal of the fork was to fix an error in the original code and implement the latest kraken2-version.**
+**>> This is a fork of the original kraken2-server from epi2me-labs: https://github.com/epi2me-labs/kraken2-server <<**  
+**The goal of the fork was to fix an error in the original code and implement the latest kraken2-version.**
 
 # Kraken2 Server
 
