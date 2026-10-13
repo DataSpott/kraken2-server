@@ -199,7 +199,7 @@ void Usage(int exit_code) {
               << "\t-q, -Q, --min-quality [int]     Minimum base quality used in classification (default: 0), only effective with FASTQ input)." << std::endl
               << "\t-g, -G, --hit-groups [int]      Minimum number of hit groups (overlapping k-mers sharing the same minimizer) needed to make a call (default: 2)" << std::endl
               << "\t-o, -O, --memory-mapping        Avoids loading database into RAM" << std::endl;
-              << "\t-v, -V, --version               Print version information and exit" << std::edl;
+              << "\t-v, -V, --version               Print version information and exit" << std::endl;
     exit(exit_code);
 }
 
