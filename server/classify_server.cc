@@ -10,8 +10,17 @@ using namespace std::chrono_literals; // ns, us, ms, s, h, etc.
 
 Kraken2ServerClassifier::Kraken2ServerClassifier(Options &options)
         : opts(options),
-            taxonomy(opts.taxonomy_filename, opts.use_memory_mapping),
-            hash(opts.index_filename, opts.use_memory_mapping) {
+            taxonomy(opts.taxonomy_filename, opts.use_memory_mapping) {
+    switch (GetKVStoreCellType(opts.index.filename)) {
+        case CompactHash32:
+            hash = new CompactHashTable<CompactHashCell>(opts.index_filename, opts.use_memory_mapping);
+            break;
+        case CompactHash40:
+            hash = new CompactHashTable<CompactHashCell40>(opts.index_filename, opts.use_memory_mapping);
+            break;
+        default:
+            errx(EX_OSERR, "unable to determine hash cell type of %s", opts.index_filename.c_str());
+    }
     // start a thread pool to handle classification tasks and
     // start loading the index. Should probably do better to
     // handle errors in LoadIndex
@@ -24,7 +33,7 @@ Kraken2ServerClassifier::Kraken2ServerClassifier(Options &options)
 
 
 Kraken2ServerClassifier::~Kraken2ServerClassifier(){
-    // Any deconstruction
+    delete hash;
 }
 
 
@@ -229,7 +238,7 @@ void Kraken2ServerClassifier::AddHitlistString(
 }
 
 Kraken2SequenceResult Kraken2ServerClassifier::ClassifySequence(
-    Sequence &dna, CompactHashTable &hash, Taxonomy &taxonomy, IndexOptions &idx_opts,
+    Sequence &dna, KeyValueStore *hash, Taxonomy &taxonomy, IndexOptions &idx_opts,
     Options &opts, ClassificationStats &stats, MinimizerScanner &scanner,
     vector<taxid_t> &taxa, taxon_counts_t &hit_counts,
     vector<string> &tx_frames, taxon_counters_t &curr_taxon_counts)
@@ -243,7 +252,7 @@ Kraken2SequenceResult Kraken2ServerClassifier::ClassifySequence(
 
     if (opts.use_translated_search)
     {
-        TranslateToAllFrames(dna.seq, tx_frames);
+        TranslateToAllFrames(dna.seq.c_str(), dna.seq.size(), tx_frames);
     }
     // index of frame is 0 - 5 w/ tx search (or 0 if no tx search)
     for (int frame_idx = 0; frame_idx < frame_ct; frame_idx++)
@@ -277,7 +286,7 @@ Kraken2SequenceResult Kraken2ServerClassifier::ClassifySequence(
                     }
                     taxon = 0;
                     if (!skip_lookup)
-                        taxon = hash.Get(*minimizer_ptr);
+                        taxon = hash->Get(*minimizer_ptr);
                     last_taxon = taxon;
                     last_minimizer = *minimizer_ptr;
                     // Increment this only if (a) we have DB hit and

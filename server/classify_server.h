@@ -116,7 +116,7 @@ private:
     // Database and Historical Stats
     Options opts;
     Taxonomy taxonomy;
-    CompactHashTable hash;
+    KeyValeStore *hash = nullptr;
     IndexOptions idx_opts;
     taxon_counters_t total_taxon_counters;
     ClassificationStats total_stats = {0, 0, 0};
@@ -128,7 +128,7 @@ private:
 
     Kraken2SequenceResult ClassifySequence(
         Sequence &dna,
-        CompactHashTable &hash, Taxonomy &taxonomy, IndexOptions &idx_opts,
+        KeyValueStore *hash, Taxonomy &taxonomy, IndexOptions &idx_opts,
         Options &opts, ClassificationStats &stats, MinimizerScanner &scanner,
         vector<taxid_t> &taxa, taxon_counts_t &hit_counts,
         vector<string> &tx_frames, taxon_counters_t &curr_taxon_counts);
@@ -137,7 +137,7 @@ private:
 
     void ProcessFile(
         Sequence &seq,
-        CompactHashTable &hash, Taxonomy &tax,
+        KeyValueStore *hash, Taxonomy &tax,
         IndexOptions &idx_opts, Options &opts, ClassificationStats &stats,
         taxon_counters_t &total_taxon_counters,
         Kraken2SequenceResult &classification,
