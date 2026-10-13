@@ -1,3 +1,6 @@
+**This is a fork of the original kraken2-server from epi2me-labs.**
+**Goal of the fork was to fix an error in the original code and implement the latest kraken2-version.**
+
 # Kraken2 Server
 
 Kraken2 is a taxonomic sequence classification system. This project builds
