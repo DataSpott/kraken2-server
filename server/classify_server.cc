@@ -11,7 +11,7 @@ using namespace std::chrono_literals; // ns, us, ms, s, h, etc.
 Kraken2ServerClassifier::Kraken2ServerClassifier(Options &options)
         : opts(options),
             taxonomy(opts.taxonomy_filename, opts.use_memory_mapping) {
-    switch (GetKVStoreCellType(opts.index.filename)) {
+    switch (GetKVStoreCellType(opts.index_filename)) {
         case CompactHash32:
             hash = new CompactHashTable<CompactHashCell>(opts.index_filename, opts.use_memory_mapping);
             break;

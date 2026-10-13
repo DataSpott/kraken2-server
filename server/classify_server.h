@@ -116,7 +116,7 @@ private:
     // Database and Historical Stats
     Options opts;
     Taxonomy taxonomy;
-    KeyValeStore *hash = nullptr;
+    KeyValueStore *hash = nullptr;
     IndexOptions idx_opts;
     taxon_counters_t total_taxon_counters;
     ClassificationStats total_stats = {0, 0, 0};
