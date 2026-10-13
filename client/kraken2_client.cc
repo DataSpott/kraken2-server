@@ -49,6 +49,7 @@ struct Options
 {
     std::string sequence;
     std::string report_file;
+    std::string output_file;
     std::string host = "localhost";
     int port = 8080;
     bool shutdown = false;
@@ -76,8 +77,18 @@ public:
      * @return EX_UNAVAILABLE if sequences could nto be sent to server
      * @return else gRPC status code
      */
-    int ClassifySequences(const std::string &sequence_name, const std::string &report_file) {
+    int ClassifySequences(const std::string &sequence_name, const std::string &output_file, const std::string &report_file) {
         std::cerr << "Classifying sequence stream." << std::endl;
+        std::ofstream output_stream;
+        std::ostream *class_out = &std::cout;
+        if (!output_file.empty()) {
+            output_stream.open(output_file, std::ofstream::out);
+            if (!output_stream.is_open()) {
+                std::cerr << "Failed to open output file: " << output_file << std::endl;
+                return EX_IOERR;
+            }
+            class_out = &output_stream;
+        }
         int state = WaitForServer();
         if (state != 0) {return state;}
 
@@ -104,7 +115,7 @@ public:
         // reading back results on gRPC stream
         std::future<int> recv_reads = std::async(
             std::launch::async, &SequenceClient::StreamReader, this,
-            std::ref(seqs_in_flight), std::ref(report_file), std::ref(stream));
+            std::ref(seqs_in_flight), std::ref(report_file), std::ref(*class_out), std::ref(stream));
 
         // wait for things to finish in order
         fastq_batches.wait();
@@ -239,7 +250,7 @@ public:
 
     int StreamReader(
             std::atomic<uint64_t> &seqs_in_flight, const std::string &report_file,
-            ClientStream &reader) {
+            std::ostream &class_out, ClientStream &reader) {
         Kraken2SequenceStreamResult result;
         int n_reads = 0;
         try {
@@ -247,7 +258,7 @@ public:
                 if (result.has_classifications()) {
                     for (auto &res : result.classifications().classes()){
                         n_reads++;
-                        PrintClassification(res);
+                        PrintClassification(res, class_out);
                         seqs_in_flight--;
                     }
                 }
@@ -266,7 +277,7 @@ public:
         }
         return n_reads;
     }
-    
+
     int FastBatcher(
             const std::string &sequence_file,
             ThreadSafeQueue<std::vector<Kraken2SequenceRequest>> *batches_queue) {
@@ -361,9 +372,9 @@ private:
      *
      * @param classification
      */
-    void PrintClassification(Kraken2SequenceResult classification) {
+    void PrintClassification(Kraken2SequenceResult classification, std::ostream &out) {
         std::string classified = classification.classified() ? "C" : "U";
-        std::cout
+        out
             << classified << '\t'
             << classification.id() << '\t'
             << classification.tax_id() << '\t'
@@ -377,6 +388,7 @@ void Usage(int exit_code) {
               << std::endl
               << "\t-h, -H, -?, --help           Usage" << std::endl
               << "\t-s, -S, --sequence [path]    Path to sequence file (*.fast(a|q)(.gz)" << std::endl
+              << "\t-o, -O, --output   [path]    Path to output file" << std::endl
               << "\t-r, -R  --report   [path]    Path to output report file" << std::endl
               << "\t-i, -I  --host-ip            Server IP address (default: localhost)." << std::endl
               << "\t-p, -P, --port [num]         Server port (default: 8080)." << std::endl
@@ -394,6 +406,8 @@ void ParseCommandLine(int argc, char **argv, Options &opts) {
         {
             {"sequence", required_argument, NULL, 's'},
             {"sequence", required_argument, NULL, 'S'},
+            {"output", required_argument, NULL, 'o'},
+            {"output", required_argument, NULL, 'O'},
             {"report", required_argument, NULL, 'r'},
             {"report", required_argument, NULL, 'R'},
             {"host-ip", required_argument, NULL, 'i'},
@@ -409,7 +423,7 @@ void ParseCommandLine(int argc, char **argv, Options &opts) {
             {NULL, 0, NULL, 0}};
     int opt;
     // Handle the various shell arguments (long mapped to short)
-    while ((opt = getopt_long(argc, argv, "hH?u:U:s:S:r:R:p:P:bBkKvV", long_options, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "hH?u:U:s:S:o:O:r:R:p:P:bBkKvV", long_options, NULL)) != -1) {
         switch (opt)
         {
         case 'h':
@@ -432,6 +446,10 @@ void ParseCommandLine(int argc, char **argv, Options &opts) {
         case 's':
         case 'S':
             opts.sequence = optarg;
+            break;
+        case 'o':
+        case 'O':
+            opts.output_file = optarg;
             break;
         case 'r':
         case 'R':
@@ -487,8 +505,9 @@ int main(int argc, char **argv) {
     }
     else {
         const std::string filename(opts.sequence);
+        const std::string output_file(opts.output_file);
         const std::string report_file(opts.report_file);
-        rtn_code = client.ClassifySequences(filename, report_file);
+        rtn_code = client.ClassifySequences(filename, output_file, report_file);
     }
 
     std::cerr << "Return code: " << rtn_code << std::endl;
