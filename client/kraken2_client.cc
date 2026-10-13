@@ -417,6 +417,7 @@ void ParseCommandLine(int argc, char **argv, Options &opts) {
         case 'H':
             Usage(0);
             break;
+        case 'v':
         case 'V':
         #ifndef KRAKEN2_SERVER_GIT_SHA
         #define KRAKEN2_SERVER_GIT_SHA "unkown"
