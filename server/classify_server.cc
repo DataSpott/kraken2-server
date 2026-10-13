@@ -405,7 +405,7 @@ void Kraken2ServerClassifier::ClassifyPaired(
             } else {
                 scanner.LoadSequence(mate.seq);
             }
-            uint64_t last_minimizer ) UINT64_MAX;
+            uint64_t last_minimizer = UINT64_MAX;
             taxid_t last_taxon = TAXID_MAX;
             while ((minimizer_ptr = scanner.NextMinimizer()) != nullptr) {
                 taxid_t taxon;
