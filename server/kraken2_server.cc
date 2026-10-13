@@ -198,7 +198,7 @@ void Usage(int exit_code) {
               << "\t-c, -C, --confidence [double]   Confidence score threshold (default: 0.0) (0 - 1)" << std::endl
               << "\t-q, -Q, --min-quality [int]     Minimum base quality used in classification (default: 0), only effective with FASTQ input)." << std::endl
               << "\t-g, -G, --hit-groups [int]      Minimum number of hit groups (overlapping k-mers sharing the same minimizer) needed to make a call (default: 2)" << std::endl
-              << "\t-o, -O, --memory-mapping        Avoids loading database into RAM" << std::endl;
+              << "\t-o, -O, --memory-mapping        Avoids loading database into RAM" << std::endl
               << "\t-v, -V, --version               Print version information and exit" << std::endl;
     exit(exit_code);
 }
@@ -233,8 +233,8 @@ void ParseCommandLine(int argc, char **argv, Options &opts) {
         {"hit-groups", required_argument, NULL, 'G'},
         {"memory-mapping", no_argument, NULL, 'o'},
         {"memory-mapping", no_argument, NULL, 'O'},
-        {"version", no_argument, Null, 'v'},
-        {"version", no_argument, Null, 'V'},
+        {"version", no_argument, NULL, 'v'},
+        {"version", no_argument, NULL, 'V'},
         {"wait", required_argument, NULL, 'w'},
         {"wait", required_argument, NULL, 'W'},
         {"help", no_argument, NULL, 'h'},
