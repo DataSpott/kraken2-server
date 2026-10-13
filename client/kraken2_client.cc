@@ -404,8 +404,8 @@ void ParseCommandLine(int argc, char **argv, Options &opts) {
             {"shutdown", no_argument, NULL, 'K'},
             {"help", no_argument, NULL, 'h'},
             {"help", no_argument, NULL, 'H'},
-            {"version", no_argument, NULL, 'v'}
-            {"version", no_argument, NULL, 'V'}
+            {"version", no_argument, NULL, 'v'},
+            {"version", no_argument, NULL, 'V'},
             {NULL, 0, NULL, 0}};
     int opt;
     // Handle the various shell arguments (long mapped to short)
