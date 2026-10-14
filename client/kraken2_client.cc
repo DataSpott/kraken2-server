@@ -291,9 +291,11 @@ public:
         try {
             FastReader reader = FastReader(sequence_file, mates_file);
         
-            std::cerr << "Reading sequences from file: " << sequence_file << std::endl;
+            
             if (!mates_file.empty()) {
-                std::cerr << "Reading sequences from file: " << mates_file << std::endl;
+                std::cerr << "Reading sequences from files: '" + sequence_file + "' + '" + mates_file + "'" << std::endl;
+            } else {
+                std::cerr << "Reading sequences from file: '" + sequence_file + "'" << std::endl;
             }
             while (true) {
                 if ((batches_queue->size() >= MAX_BATCHES)) {
