@@ -97,6 +97,7 @@ public:
         Kraken2SequenceResultMulti response;
         ClientStream stream(sequence_stub->ClassifyStream(&context));
         std::atomic<uint64_t> seqs_in_flight = 0;
+        const bool paired = !mates_file.empty();
 
         // queue for gRPC messages (i.e. sequence reads)
         ThreadSafeQueue<std::vector<Kraken2SequenceRequest>>
@@ -111,7 +112,7 @@ public:
         std::future<int> stream_batches = std::async(
             std::launch::async, &SequenceClient::StreamWriter, this,
             std::ref(fastq_batches), std::ref(seqs_in_flight),
-            batches_queue, std::ref(stream));
+            batches_queue, std::ref(stream), paired);
 
         // reading back results on gRPC stream
         std::future<int> recv_reads = std::async(
@@ -183,7 +184,9 @@ public:
             std::future<int> &total_batches,
             std::atomic<uint64_t> &seqs_in_flight,
             ThreadSafeQueue<std::vector<Kraken2SequenceRequest>> *batches,
-            ClientStream &writer) {
+            ClientStream &writer,
+            bool paired
+        ) {
         int seqs_sent = 0;
         try {
             while (!(
@@ -196,7 +199,7 @@ public:
                     std::vector<Kraken2SequenceRequest> batch = item.value();
                     bool show_msg = true;
                     while (true) {
-                        if ((seqs_in_flight + batch.size() >= MAX_IN_FLIGHT)) {
+                        if ((seqs_in_flight + batch.size() * (paired? 2 : 1) >= MAX_IN_FLIGHT)) {
                             std::this_thread::sleep_for(10ms);
                             if (show_msg) {
                                 show_msg = false;
@@ -225,13 +228,13 @@ public:
                                     continue;
                                 }
                                 writer->Write(req, WriteOptions().set_buffer_hint());
-                                seqs_in_flight.fetch_add(1);
+                                seqs_in_flight.fetch_add(paired? 2 : 1);
                                 seqs_sent++;
                             }
                         }
                         else {
                             writer->Write(req);
-                            seqs_in_flight.fetch_add(bsize);
+                            seqs_in_flight.fetch_add(bsize * (paired? 2 : 1));
                             seqs_sent += bsize;
                         }
                     }
