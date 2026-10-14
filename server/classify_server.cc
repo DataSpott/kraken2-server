@@ -163,7 +163,7 @@ bool Kraken2ServerClassifier::ProcessBatch(
     for (auto &req : reqs.seqs()) {
         SequenceRequestToSequence(req, seq, seq2);
         if (req.paired()) {
-            results.stats.total_sequences += 2;
+            results.stats.total_sequences++;
             results.stats.total_bases += seq.seq.size() + seq2.seq.size();
             if (opts.minimum_quality_score > 0) {
                 MaskLowQualityBases(seq, opts.minimum_quality_score);
@@ -466,8 +466,7 @@ void Kraken2ServerClassifier::ClassifyPaired(
         call = 0;
     }
     if (call) {
-        stats.total_classified += 2;
-        curr_taxon_counts[call].incrementReadCount();
+        stats.total_classified++;
         curr_taxon_counts[call].incrementReadCount();
     }
 

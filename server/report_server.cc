@@ -77,7 +77,7 @@ namespace kraken2
     TaxonomyNode node = taxonomy.nodes()[taxid];
     string rank = taxonomy.rank_data() + node.rank_offset;
 
-    if (rank == "superkingdom")
+    if (rank == "superkingdom" || rank == "domain")
     {
       rank_code = 'D';
       rank_depth = 0;
@@ -122,7 +122,8 @@ namespace kraken2
       rank_depth++;
     }
 
-    string rank_str(&rank_code, 0, 1);
+    string rank_str;
+    rank_str.push_back(rank_code);
     if (rank_depth != 0)
       rank_str += std::to_string(rank_depth);
 
