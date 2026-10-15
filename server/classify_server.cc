@@ -360,7 +360,7 @@ Kraken2SequenceResult Kraken2ServerClassifier::ClassifySequence(
     }
     else
         result.set_classified(false);
-    result.set_size(dna.seq.size());
+    result.set_size(std::to_string(dna.seq.size()));
     if (taxa.empty())
         result.set_hitlist("0:0");
     else
