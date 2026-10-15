@@ -478,15 +478,6 @@ void Kraken2ServerClassifier::ClassifyPaired(
         hitlist_str = hitlist.str();
     }
 
-    std::string hitlist_str;
-    if (taxa.empty()) {
-        hitlist_str = "0:0";
-    } else {
-        std::ostringstream hitlist;
-        AddHitlistString(hitlist, taxa, taxonomy);
-        hitlist_str = hitlist.str();
-    }
-
     std::string base_id = TrimPairInfo(dna.header);
     res.set_id(base_id);
     res.set_size(std::to_string(dna.seq.size()) + "|" + std::to_string(dna2.seq.size()));
