@@ -62,7 +62,7 @@ message Kraken2SequenceResult {
   bool classified = 2;
   uint64 tax_id = 3;
   string name = 4;
-  uint32 size = 5;
+  string size = 5;
   string hitlist = 6;
 }
 

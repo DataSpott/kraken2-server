@@ -170,14 +170,13 @@ bool Kraken2ServerClassifier::ProcessBatch(
                 MaskLowQualityBases(seq2, opts.minimum_quality_score);
             }
 
-            Kraken2SequenceResult res1, res2;
+            Kraken2SequenceResult res;
             ClassifyPaired(
                 seq, seq2, hash, taxonomy, idx_opts, opts, results.stats, scanner,
-                taxa, hit_counts, translated_frames, results.taxon_counters, res1, res2
+                taxa, hit_counts, translated_frames, results.taxon_counters, res
             );
 
-            results.k2results.mutable_classes()->Add(std::move(res1));
-            results.k2results.mutable_classes()->Add(std::move(res2));
+            results.k2results.mutable_classes()->Add(std::move(res));
         } else {
             results.stats.total_sequences++;
             results.stats.total_bases += seq.seq.size();
@@ -479,22 +478,25 @@ void Kraken2ServerClassifier::ClassifyPaired(
         hitlist_str = hitlist.str();
     }
 
-    res1.set_id(dna.header);
-    res1.set_size(dna.seq.size());
-    res1.set_hitlist(hitlist_str);
-    res2.set_id(dna2.header);
-    res2.set_size(dna2.seq.size());
-    res2.set_hitlist(hitlist_str);
-    if (call) {
-        res1.set_classified(true);
-        res2.set_classified(true);
-        res1.set_tax_id(taxonomy.nodes()[call].external_id);
-        res2.set_tax_id(taxonomy.nodes()[call].external_id);
-        res1.set_name(taxonomy.name_data() + taxonomy.nodes()[call].name_offset);
-        res2.set_name(taxonomy.name_data() + taxonomy.nodes()[call].name_offset);
+    std::string hitlist_str;
+    if (taxa.empty()) {
+        hitlist_str = "0:0";
     } else {
-        res1.set_classified(false);
-        res2.set_classified(false);
+        std::ostringstream hitlist;
+        AddHitlistString(hitlist, taxa, taxonomy);
+        hitlist_str = hitlist.str();
+    }
+
+    std::string base_id = TrimPairInfo(dna.header);
+    res.set_id(base_id);
+    res.set_size(std::to_string(dna.seq.size()) + "|" + std::to_string(dna2.seq.size()));
+    res.set_hitlist(hitlist_str);
+    if (call) {
+        res.set_classified(true);
+        res.set_tax_id(taxonomy.nodes()[call].external_id);
+        res.set_name(taxonomy.name_data() + taxonomy.nodes()[call].name_offset);
+    } else {
+        res.set_classified(false);
     }
 }
 

@@ -141,7 +141,7 @@ private:
         Options &opts, ClassificationStats &stats, MinimizerScanner &scanner,
         vector<taxid_t> &taxa, taxon_counts_t &hit_counts,
         vector<string> &tx_frames, taxon_counters_t &curr_taxon_counts,
-        Kraken2SequenceResult &res1, Kraken2SequenceResult &res2
+        Kraken2SequenceResult &res
     );
 
     void MaskLowQualityBases(Sequence &dna, int minimum_quality_score);
