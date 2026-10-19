@@ -1,6 +1,44 @@
 **>> This is a fork of the original kraken2-server from epi2me-labs: https://github.com/epi2me-labs/kraken2-server <<**  
 **The goal of the fork was to fix an error in the original code and implement the latest kraken2-version.**
 
+# Usage
+## On the server machine
+Download the kraken2-db and unpack it on the machine destined to be your server (requires >= 80 GB RAM to safely run std-db and have some RAM left for system):
+```
+wget --no-check-certificate https://genome-idx.s3.amazonaws.com/kraken/k2_standard_20240605.tar.gz -O kraken.tar.gz
+mkdir -p kraken_db && tar -xzf kraken.tar.gz -C kraken_db
+```
+Head into the directory in which the unpacked db-dir is located and start the server with following command:
+```
+docker run --rm -it -p 8080:8080 -v $PWD:/input/ dataspott/kraken2_server:v0.3.2-20261019 kraken2_server \
+        --db /input/kraken2_db/ \
+        --max-requests 4 \
+        --thread-pool 3 \
+        --port 8080
+```
+The server will start and load the kraken2-db into RAM. The docker will listen to calls from local host network (127.0.0.1) on port 8080. You can end the server-activity simply via ctrl-c.
+
+## On your local machine
+Run the client-cmd like:
+```
+docker run --rm -p 8080:8080 -v $PWD:/input/ dataspott/kraken2_server:v0.3.2-20261019 \
+        --sequence /input/path/to/sequence/SEQUENCE.fastx(.gz) \
+        --output /input/FILENAME.kraken.out \
+        --report /input/FILENAME.kreport \
+        --host-ip 127.0.0.1 \
+        --port 8080
+```
+or for paired Illumina-reads:
+```
+docker run --rm -p 8080:8080 -v $PWD:/input/ dataspott/kraken2_server:v0.3.2-20261019 \
+        --sequence /input/path/to/sequence/SEQUENCE_1.fastx(.gz) \
+        --mates /input/path/to/sequence/SEQUENCE_2.fastx(.gz) \
+        --output /input/FILENAME.kraken.out \
+        --report /input/FILENAME.kreport \
+        --host-ip 127.0.0.1 \
+        --port 8080
+```
+
 # Kraken2 Server
 
 Kraken2 is a taxonomic sequence classification system. This project builds
